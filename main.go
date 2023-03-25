@@ -1,7 +1,10 @@
 package main
 
 func main() {
-	config := NewConfig()
+	config, err := NewConfig()
+	if err != nil {
+		panic(err)
+	}
 
 	server := NewApiServer(config)
 	server.Run()
