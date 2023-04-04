@@ -3,9 +3,13 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
+    "errors"
+    "log"
 	"fmt"
 	"net/http"
 )
+
+type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
 type ApiServer struct {
 	listenAddr string
@@ -13,8 +17,8 @@ type ApiServer struct {
 	keyFile    string
 }
 
-func NewApiServer(config Config) ApiServer {
-	return ApiServer{
+func NewApiServer(config Config) *ApiServer {
+	return &ApiServer{
 		listenAddr: config.listenAddr,
 		certFile:   config.certFile,
 		keyFile:    config.keyFile,
@@ -24,12 +28,12 @@ func NewApiServer(config Config) ApiServer {
 func (s *ApiServer) Run() {
 	cert, err := tls.LoadX509KeyPair(s.certFile, s.keyFile)
 	if err != nil {
-		fmt.Println("Unable to load cert or key file")
+		log.Println("Unable to load cert or key file")
 		panic(err)
 	}
 
-	fmt.Println("Starting webhook server")
-	http.HandleFunc("/validate", validate)
+	log.Println("Starting webhook server")
+	http.HandleFunc("/validate", newApiFunc(s.handleValidate))
 	server := http.Server{
 		Addr: s.listenAddr,
 		TLSConfig: &tls.Config{
@@ -42,14 +46,36 @@ func (s *ApiServer) Run() {
 	}
 }
 
-func validate(w http.ResponseWriter, r *http.Request) {
-	if err := writeJson(w, http.StatusOK, map[string]string{
-		"message": "hello there",
-	}); err != nil {
-		writeJson(w, http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
-		})
-	}
+func newApiFunc(f apiFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        if err := f(w, r); err != nil {
+            var apiError *ApiError
+            if errors.As(err, &apiError) {
+                writeJson(w, apiError.Code(), apiError.Error())
+                return
+            }
+            writeJson(w, http.StatusInternalServerError, err.Error())
+        }
+    }
+}
+
+func (s *ApiServer) handleValidate(w http.ResponseWriter, r *http.Request) error {
+    switch r.Method {
+    case "GET":
+        return s.handleGetValidate(w, r)
+    case "POST":
+        return s.handlePostValidate(w, r)
+    default:
+        return NewApiError(http.StatusMethodNotAllowed, fmt.Sprintf("%s method not allowed", r.Method))
+    }
+}
+
+func (s *ApiServer) handleGetValidate(w http.ResponseWriter, r *http.Request) error {
+    return writeJson(w, http.StatusOK, "okkkkk")
+}
+
+func (s *ApiServer) handlePostValidate(w http.ResponseWriter, r *http.Request) error {
+    return nil
 }
 
 func writeJson(w http.ResponseWriter, code int, v any) error {
