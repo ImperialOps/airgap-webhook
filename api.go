@@ -139,6 +139,7 @@ func (s *ApiServer) handleGetHealth(w http.ResponseWriter, r *http.Request) erro
 }
 
 func (s *ApiServer) isServerHealthy() bool {
+    // TODO check DB connection
     return true
 }
 

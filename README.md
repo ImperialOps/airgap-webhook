@@ -2,12 +2,11 @@
 
 ![Release](https://github.com/ImperialOps/airgap-webhook/workflows/release/badge.svg?branch=main)
 
-This microservice acts as a validating webhook in a Kubernetes cluster. It maintains a stateful inventory of all images that are deployed to the cluster.
+This microservice acts as a [validating admission webhook](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/) in a Kubernetes cluster. It maintains a stateful inventory of all images that are deployed to the cluster.
 
 ## Installation
 
-To install the microservice, follow these steps:
-TODO
+Use the official [helm chart](https://github.com/ImperialOps/helm-charts).
 
 ## Configuration
 
