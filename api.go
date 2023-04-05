@@ -18,6 +18,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
 type ApiServer struct {
 	listenAddr string
+    tls        bool
 	certFile   string
 	keyFile    string
 }
@@ -99,24 +100,24 @@ func (s *ApiServer) handlePostValidate(w http.ResponseWriter, r *http.Request) e
 		return NewApiError(http.StatusBadRequest, err.Error())
 	}
 
-    // TODO do something with resource
-    //switch admissionReviewRequest.Request.Kind {
-    //case "v1.Pod":
-        //_ := "hello"
-    //default:
-        //_ := "Not implemented"
-    //}
+	// TODO do something with resource
+	//switch admissionReviewRequest.Request.Kind {
+	//case "v1.Pod":
+	//_ := "hello"
+	//default:
+	//_ := "Not implemented"
+	//}
 
-    // Accept AdmissionRequest
+	// Accept AdmissionRequest
 	admissionResponse := &admissionv1.AdmissionResponse{}
 	admissionResponse.Allowed = true
 
-    // Construct the response, which is just an AdmissionReview.
+	// Construct the response, which is just an AdmissionReview.
 	var admissionReviewResponse admissionv1.AdmissionReview
 	admissionReviewResponse.Response = admissionResponse
 	admissionReviewResponse.SetGroupVersionKind(admissionReviewRequest.GroupVersionKind())
 	admissionReviewResponse.Response.UID = admissionReviewRequest.Request.UID
-    return writeJson(w, http.StatusOK, admissionResponse)
+	return writeJson(w, http.StatusOK, admissionResponse)
 }
 
 func writeJson(w http.ResponseWriter, code int, v any) error {
