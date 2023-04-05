@@ -39,6 +39,7 @@ func (s *ApiServer) Run() {
 	}
 
 	log.Println("Starting webhook server")
+    http.HandleFunc("/healthz", newApiFunc(s.handleHealth))
 	http.HandleFunc("/validate", newApiFunc(s.handleValidate))
 	server := http.Server{
 		Addr: s.listenAddr,
@@ -118,6 +119,27 @@ func (s *ApiServer) handlePostValidate(w http.ResponseWriter, r *http.Request) e
 	admissionReviewResponse.SetGroupVersionKind(admissionReviewRequest.GroupVersionKind())
 	admissionReviewResponse.Response.UID = admissionReviewRequest.Request.UID
 	return writeJson(w, http.StatusOK, admissionResponse)
+}
+
+func (s *ApiServer) handleHealth(w http.ResponseWriter, r *http.Request) error {
+    switch r.Method {
+    case "GET":
+        return s.handleGetHealth(w, r)
+	default:
+		return NewApiError(http.StatusMethodNotAllowed, fmt.Sprintf("%s method not allowed", r.Method))
+    }
+}
+
+func (s *ApiServer) handleGetHealth(w http.ResponseWriter, r *http.Request) error {
+    if s.isServerHealthy() {
+        return writeJson(w, http.StatusOK, "")
+    } else {
+        return writeJson(w, http.StatusInternalServerError, "")
+    }
+}
+
+func (s *ApiServer) isServerHealthy() bool {
+    return true
 }
 
 func writeJson(w http.ResponseWriter, code int, v any) error {
