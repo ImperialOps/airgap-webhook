@@ -1,5 +1,7 @@
 # Microservice for Kubernetes Image Inventory :smile:
 
+![Release](https://github.com/ImperialOps/airgap-webhook/workflows/release/badge.svg?branch=main)
+
 This microservice acts as a validating webhook in a Kubernetes cluster. It maintains a stateful inventory of all images that are deployed to the cluster.
 
 ## Installation
