@@ -7,44 +7,44 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"math/big"
 	"os"
 	"time"
+
+    "github.com/spf13/viper"
+    "github.com/spf13/pflag"
 )
 
-const certDirectory = "/etc/webhook/certs"
-
 type Config struct {
-	listenAddr string
-	certFile   string
-	keyFile    string
+	cfgFile    string    `json:"cfgFile"`
+	listenAddr string    `json:"listenAddr"`
+	tls        ConfigTls `json:"tls"`
+	apiAddr    string    `json:"apiAddr"`
+}
+
+type ConfigTls struct {
+	enabled  bool   `json:"enabled"`
+	certFile string `json:"certFile"`
+	keyFile  string `json:"keyFile"`
 }
 
 // TODO viper config
 func NewConfig() (Config, error) {
-	// set defaults
-	inputCertFile := ""
-	inputKeyFile := ""
-	if inputCertFile == "" || inputKeyFile == "" {
-		if err := createCertificates(); err != nil {
-			return Config{}, err
-		}
-		inputCertFile = fmt.Sprintf("%s/tls.crt", certDirectory)
-		inputKeyFile = fmt.Sprintf("%s/tls.key", certDirectory)
-	}
+    var config Config
 
-	// set defaults
-	inputListenAddr := ""
-	if inputListenAddr == "" {
-		inputListenAddr = ":8000"
-	}
+    flag.String("config", "", "help message for flagname")
 
-	return Config{
-		listenAddr: inputListenAddr,
-		certFile:   inputCertFile,
-		keyFile:    inputKeyFile,
-	}, nil
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
+
+    err := viper.Unmarshal(&config)
+    if err != nil {
+        return Config{}, err
+    }
+    return Config{}, err
 }
 
 func createCertificates() error {

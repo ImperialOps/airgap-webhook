@@ -18,7 +18,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
 type ApiServer struct {
 	listenAddr string
-    tls        bool
+	tls        bool
 	certFile   string
 	keyFile    string
 }
@@ -39,7 +39,7 @@ func (s *ApiServer) Run() {
 	}
 
 	log.Println("Starting webhook server")
-    http.HandleFunc("/healthz", newApiFunc(s.handleHealth))
+	http.HandleFunc("/healthz", newApiFunc(s.handleHealth))
 	http.HandleFunc("/validate", newApiFunc(s.handleValidate))
 	server := http.Server{
 		Addr: s.listenAddr,
@@ -122,25 +122,25 @@ func (s *ApiServer) handlePostValidate(w http.ResponseWriter, r *http.Request) e
 }
 
 func (s *ApiServer) handleHealth(w http.ResponseWriter, r *http.Request) error {
-    switch r.Method {
-    case "GET":
-        return s.handleGetHealth(w, r)
+	switch r.Method {
+	case "GET":
+		return s.handleGetHealth(w, r)
 	default:
 		return NewApiError(http.StatusMethodNotAllowed, fmt.Sprintf("%s method not allowed", r.Method))
-    }
+	}
 }
 
 func (s *ApiServer) handleGetHealth(w http.ResponseWriter, r *http.Request) error {
-    if s.isServerHealthy() {
-        return writeJson(w, http.StatusOK, "")
-    } else {
-        return writeJson(w, http.StatusInternalServerError, "")
-    }
+	if s.isServerHealthy() {
+		return writeJson(w, http.StatusOK, "")
+	} else {
+		return writeJson(w, http.StatusInternalServerError, "")
+	}
 }
 
 func (s *ApiServer) isServerHealthy() bool {
-    // TODO check DB connection
-    return true
+	// TODO check DB connection
+	return true
 }
 
 func writeJson(w http.ResponseWriter, code int, v any) error {
