@@ -1,6 +1,10 @@
+.SILENT: build
+build:
+	go build -o bin/airgap-webhook
+
 .SILENT: run
-run:
-	go run .
+run: build
+	./bin/airgap-webhook
 
 .SILENT: docker_build
 docker_build:

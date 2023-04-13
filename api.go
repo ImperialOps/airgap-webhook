@@ -16,39 +16,70 @@ import (
 
 type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
-type ApiServer struct {
-	listenAddr string
-	tls        bool
-	certFile   string
-	keyFile    string
+type ApiServer interface {
+    Run()
 }
 
-func NewApiServer(config Config) *ApiServer {
-	return &ApiServer{
-		listenAddr: config.listenAddr,
-		certFile:   config.certFile,
-		keyFile:    config.keyFile,
-	}
+type ApiServerCommon struct {
+    config *Config
 }
 
-func (s *ApiServer) Run() {
-	cert, err := tls.LoadX509KeyPair(s.certFile, s.keyFile)
+type ApiServerHttp struct {
+    ApiServerCommon
+}
+
+type ApiServerHttps struct {
+    ApiServerCommon
+}
+
+func NewApiServer(c *Config) ApiServer {
+    apiServer := ApiServerCommon{
+        config: c,
+    }
+
+    switch c.tls.enabled {
+    case true:
+        return &ApiServerHttps{
+            ApiServerCommon: apiServer,
+        }
+    default:
+        return &ApiServerHttp{
+            ApiServerCommon: apiServer,
+        }
+    }
+}
+
+func (s *ApiServerHttps) Run() {
+	cert, err := tls.LoadX509KeyPair(s.config.tls.certFile, s.config.tls.keyFile)
 	if err != nil {
 		log.Println("Unable to load cert or key file")
 		panic(err)
 	}
 
-	log.Println("Starting webhook server")
+    log.Printf("listening on %s", s.config.listenAddr)
 	http.HandleFunc("/healthz", newApiFunc(s.handleHealth))
 	http.HandleFunc("/validate", newApiFunc(s.handleValidate))
 	server := http.Server{
-		Addr: s.listenAddr,
+		Addr: s.config.listenAddr,
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		},
 	}
 
 	if err := server.ListenAndServeTLS("", ""); err != nil {
+		panic(err)
+	}
+}
+
+func (s *ApiServerHttp) Run() {
+    log.Printf("listening on %s", s.config.listenAddr)
+	http.HandleFunc("/healthz", newApiFunc(s.handleHealth))
+	http.HandleFunc("/validate", newApiFunc(s.handleValidate))
+	server := http.Server{
+		Addr: s.config.listenAddr,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }
@@ -66,7 +97,7 @@ func newApiFunc(f apiFunc) http.HandlerFunc {
 	}
 }
 
-func (s *ApiServer) handleValidate(w http.ResponseWriter, r *http.Request) error {
+func (s *ApiServerCommon) handleValidate(w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
 	case "POST":
 		return s.handlePostValidate(w, r)
@@ -75,7 +106,7 @@ func (s *ApiServer) handleValidate(w http.ResponseWriter, r *http.Request) error
 	}
 }
 
-func (s *ApiServer) handlePostValidate(w http.ResponseWriter, r *http.Request) error {
+func (s *ApiServerCommon) handlePostValidate(w http.ResponseWriter, r *http.Request) error {
 	// Validate that the incoming content type is correct.
 	if r.Header.Get("Content-Type") != "application/json" {
 		return NewApiError(http.StatusBadRequest, "expected application/json content-type")
@@ -101,6 +132,9 @@ func (s *ApiServer) handlePostValidate(w http.ResponseWriter, r *http.Request) e
 		return NewApiError(http.StatusBadRequest, err.Error())
 	}
 
+    // log request
+    log.Printf("admission request: \n%v", admissionReviewRequest.String())
+
 	// TODO do something with resource
 	//switch admissionReviewRequest.Request.Kind {
 	//case "v1.Pod":
@@ -121,7 +155,7 @@ func (s *ApiServer) handlePostValidate(w http.ResponseWriter, r *http.Request) e
 	return writeJson(w, http.StatusOK, admissionResponse)
 }
 
-func (s *ApiServer) handleHealth(w http.ResponseWriter, r *http.Request) error {
+func (s *ApiServerCommon) handleHealth(w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
 	case "GET":
 		return s.handleGetHealth(w, r)
@@ -130,7 +164,7 @@ func (s *ApiServer) handleHealth(w http.ResponseWriter, r *http.Request) error {
 	}
 }
 
-func (s *ApiServer) handleGetHealth(w http.ResponseWriter, r *http.Request) error {
+func (s *ApiServerCommon) handleGetHealth(w http.ResponseWriter, r *http.Request) error {
 	if s.isServerHealthy() {
 		return writeJson(w, http.StatusOK, "")
 	} else {
@@ -138,7 +172,7 @@ func (s *ApiServer) handleGetHealth(w http.ResponseWriter, r *http.Request) erro
 	}
 }
 
-func (s *ApiServer) isServerHealthy() bool {
+func (s *ApiServerCommon) isServerHealthy() bool {
 	// TODO check DB connection
 	return true
 }
