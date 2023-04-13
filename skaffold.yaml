@@ -1,0 +1,14 @@
+apiVersion: skaffold/v4beta4
+kind: Config
+build:
+  artifacts:
+  - image: airgapWebhook
+deploy:
+  helm:
+    releases:
+      - name: airgap-webhook
+        repo: https://imperialops.github.io/helm-charts 
+        remoteChart: airgap-webhook
+        setValueTemplates:
+          admission.image.repository: "{{.IMAGE_REPO_airgapWebhook}}"
+          admission.image.tag: "{{.IMAGE_TAG_airgapWebhook}}@{{.IMAGE_DIGEST_airgapWebhook}}"
