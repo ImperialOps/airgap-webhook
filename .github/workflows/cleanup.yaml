@@ -15,4 +15,4 @@ jobs:
         with: 
           package-name: airgap-webhook
           package-type: container
-          min-versions-to-keep: 10
+          min-versions-to-keep: 20
