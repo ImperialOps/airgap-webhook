@@ -2,7 +2,7 @@ apiVersion: skaffold/v4beta4
 kind: Config
 build:
   artifacts:
-  - image: airgapWebhook
+    - image: ghcr.io/imperialops/graveyard
 deploy:
   helm:
     releases:
@@ -10,5 +10,7 @@ deploy:
         repo: https://imperialops.github.io/helm-charts 
         remoteChart: airgap-webhook
         setValueTemplates:
-          admission.image.repository: "{{.IMAGE_REPO_airgapWebhook}}"
-          admission.image.tag: "{{.IMAGE_TAG_airgapWebhook}}@{{.IMAGE_DIGEST_airgapWebhook}}"
+          admission.image.registry: "{{.IMAGE_DOMAIN_ghcr_io_imperialops_graveyard}}"
+          admission.image.repository: "{{.IMAGE_REPO_NO_DOMAIN_ghcr_io_imperialops_graveyard}}"
+          admission.image.tag: "{{.IMAGE_TAG_ghcr_io_imperialops_graveyard}}"
+          admission.image.digest: "{{.IMAGE_DIGEST_ghcr_io_imperialops_graveyard}}"
