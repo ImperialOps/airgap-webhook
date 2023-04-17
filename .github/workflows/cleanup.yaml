@@ -7,8 +7,6 @@ on:
 jobs:
   cleanup-packages:
     runs-on: ubuntu-latest
-    permissions:
-      packages: admin
 
     steps:
       - uses: actions/delete-package-versions@v4
