@@ -5,48 +5,43 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-
-	admissionv1 "k8s.io/api/admission/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
 type ApiServer interface {
-    Run()
+	Run()
 }
 
 type ApiServerCommon struct {
-    config *Config
+	config *Config
 }
 
 type ApiServerHttp struct {
-    ApiServerCommon
+	ApiServerCommon
 }
 
 type ApiServerHttps struct {
-    ApiServerCommon
+	ApiServerCommon
 }
 
 func NewApiServer(c *Config) ApiServer {
-    apiServer := ApiServerCommon{
-        config: c,
-    }
+	apiServer := ApiServerCommon{
+		config: c,
+	}
 
-    switch c.tls.enabled {
-    case true:
-        return &ApiServerHttps{
-            ApiServerCommon: apiServer,
-        }
-    default:
-        return &ApiServerHttp{
-            ApiServerCommon: apiServer,
-        }
-    }
+	switch c.tls.enabled {
+	case true:
+		return &ApiServerHttps{
+			ApiServerCommon: apiServer,
+		}
+	default:
+		return &ApiServerHttp{
+			ApiServerCommon: apiServer,
+		}
+	}
 }
 
 func (s *ApiServerHttps) Run() {
@@ -56,7 +51,7 @@ func (s *ApiServerHttps) Run() {
 		panic(err)
 	}
 
-    log.Printf("listening on %s", s.config.listenAddr)
+	log.Printf("listening on %s", s.config.listenAddr)
 	http.HandleFunc("/healthz", newApiFunc(s.handleHealth))
 	http.HandleFunc("/validate", newApiFunc(s.handleValidate))
 	server := http.Server{
@@ -72,7 +67,7 @@ func (s *ApiServerHttps) Run() {
 }
 
 func (s *ApiServerHttp) Run() {
-    log.Printf("listening on %s", s.config.listenAddr)
+	log.Printf("listening on %s", s.config.listenAddr)
 	http.HandleFunc("/healthz", newApiFunc(s.handleHealth))
 	http.HandleFunc("/validate", newApiFunc(s.handleValidate))
 	server := http.Server{
@@ -112,47 +107,12 @@ func (s *ApiServerCommon) handlePostValidate(w http.ResponseWriter, r *http.Requ
 		return NewApiError(http.StatusBadRequest, "expected application/json content-type")
 	}
 
-	// Get the body data, which will be the AdmissionReview
-	// content for the request.
-	var body []byte
-	if r.Body != nil {
-		requestData, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return NewApiError(http.StatusBadRequest, err.Error())
-		}
-		body = requestData
-	}
+    response, err := handleAdmissionReview(r)
+    if err != nil {
+        return err
+    }
 
-	codecs := serializer.NewCodecFactory(runtime.NewScheme())
-	deserializer := codecs.UniversalDeserializer()
-
-	// Decode the request body
-	admissionReviewRequest := &admissionv1.AdmissionReview{}
-	if _, _, err := deserializer.Decode(body, nil, admissionReviewRequest); err != nil {
-		return NewApiError(http.StatusBadRequest, err.Error())
-	}
-
-    // log request
-    log.Printf("admission request: \n%v", admissionReviewRequest.String())
-
-	// TODO do something with resource
-	//switch admissionReviewRequest.Request.Kind {
-	//case "v1.Pod":
-	//_ := "hello"
-	//default:
-	//_ := "Not implemented"
-	//}
-
-	// Accept AdmissionRequest
-	admissionResponse := &admissionv1.AdmissionResponse{}
-	admissionResponse.Allowed = true
-
-	// Construct the response, which is just an AdmissionReview.
-	var admissionReviewResponse admissionv1.AdmissionReview
-	admissionReviewResponse.Response = admissionResponse
-	admissionReviewResponse.SetGroupVersionKind(admissionReviewRequest.GroupVersionKind())
-	admissionReviewResponse.Response.UID = admissionReviewRequest.Request.UID
-	return writeJson(w, http.StatusOK, admissionResponse)
+	return writeJson(w, http.StatusOK, response)
 }
 
 func (s *ApiServerCommon) handleHealth(w http.ResponseWriter, r *http.Request) error {
