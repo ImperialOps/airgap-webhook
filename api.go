@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -107,10 +108,21 @@ func (s *ApiServerCommon) handlePostValidate(w http.ResponseWriter, r *http.Requ
 		return NewApiError(http.StatusBadRequest, "expected application/json content-type")
 	}
 
-    response, err := handleAdmissionReview(r)
-    if err != nil {
-        return err
-    }
+	// Get the body data, which will be the AdmissionReview
+	// content for the request.
+	var body []byte
+	if r.Body != nil {
+		requestData, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return NewApiError(http.StatusBadRequest, "expected a request body")
+		}
+		body = requestData
+	}
+
+	response, err := handleAdmissionReview(body)
+	if err != nil {
+		return err
+	}
 
 	return writeJson(w, http.StatusOK, response)
 }
