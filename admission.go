@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,19 +12,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
+var (
+	codecs       = serializer.NewCodecFactory(runtime.NewScheme())
+	deserializer = codecs.UniversalDeserializer()
+)
+
 type AdmissionReview struct {
 	admissionv1.AdmissionReview
 	images []Image
 }
 
 func NewAdmissionReview(b []byte) (*AdmissionReview, error) {
-	codecs := serializer.NewCodecFactory(runtime.NewScheme())
-	deserializer := codecs.UniversalDeserializer()
-
 	// Decode the bytes
 	admissionReview := &AdmissionReview{}
 	if _, _, err := deserializer.Decode(b, nil, admissionReview); err != nil {
-		return &AdmissionReview{}, err
+		return &AdmissionReview{}, NewApiError(http.StatusBadRequest, err.Error())
 	}
 
 	admissionReview.images = []Image{}
@@ -48,18 +49,19 @@ func NewImage(i string) Image {
 	return image
 }
 
-func handleAdmissionReview(i []byte) (admissionv1.AdmissionReview, error) {
+func handleAdmissionReview(b []byte) (admissionv1.AdmissionReview, error) {
 	// Decode the request body
-	admissionReview, err := NewAdmissionReview(i)
-	if err != nil {
-		return admissionv1.AdmissionReview{}, NewApiError(http.StatusBadRequest, err.Error())
-	}
-
-	admissionReview.images, err = handleResource(admissionReview)
+	admissionReview, err := NewAdmissionReview(b)
 	if err != nil {
 		return admissionv1.AdmissionReview{}, err
 	}
 
+	err = admissionReview.handleResource()
+	if err != nil {
+		return admissionv1.AdmissionReview{}, err
+	}
+
+	// TODO test with our AdmissionReview
 	// Construct the response, which is just an AdmissionReview.
 	admissionResponse := &admissionv1.AdmissionResponse{}
 	admissionResponse.Allowed = true
@@ -72,19 +74,11 @@ func handleAdmissionReview(i []byte) (admissionv1.AdmissionReview, error) {
 	return admissionReviewResponse, nil
 }
 
-func handleResource(review *AdmissionReview) ([]Image, error) {
-	codecs := serializer.NewCodecFactory(runtime.NewScheme())
-	deserializer := codecs.UniversalDeserializer()
-	rawRequest := review.Request.Object.Raw
-
-	s := (review.Request.Kind.Version + "." + review.Request.Kind.Kind)
+func (r *AdmissionReview) handleResource() error {
+	s := (r.Request.Kind.Version + "." + r.Request.Kind.Kind)
 	switch s {
 	case "v1.Pod":
-		pod := corev1.Pod{}
-		if _, _, err := deserializer.Decode(rawRequest, nil, &pod); err != nil {
-			return []Image{}, NewApiError(http.StatusBadRequest, err.Error())
-		}
-		return handlePodResource(&pod)
+		return r.handlePodResource()
 	case "v1.Job":
 		_ = ""
 	case "v1.CronJob":
@@ -98,16 +92,29 @@ func handleResource(review *AdmissionReview) ([]Image, error) {
 	case "v1.ReplicaSet":
 		_ = ""
 	default:
-		return []Image{}, NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s, not implemented", s))
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s, not implemented", s))
 	}
-	return []Image{}, nil
+	return nil
 }
 
-func handlePodResource(pod *corev1.Pod) ([]Image, error) {
+func (r *AdmissionReview) handlePodResource() error {
+	rawRequest := r.Request.Object.Raw
+	pod := corev1.Pod{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &pod); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+
 	log.Printf("got pod %s", pod.Name)
-	return []Image{}, nil
+	return nil
 }
 
-func handleDeploymentResource(deployment *appsv1.Deployment) ([]Image, error) {
-	return []Image{}, nil
+func (r *AdmissionReview) handleDeploymentResource() error {
+	rawRequest := r.Request.Object.Raw
+	deployment := appsv1.Deployment{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &deployment); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+
+	log.Printf("got deployment %s", deployment.Name)
+	return nil
 }
