@@ -49,8 +49,8 @@ func TestNewImage(t *testing.T) {
 		},
 	}
 
-    for _, test := range tests {
-        image := NewImage(test.image)
-        assert.Equal(t, image, test.expected, "got %v, expected %v", image, test.expected)
-    }
+	for _, test := range tests {
+		image := NewImage(test.image)
+		assert.Equal(t, image, test.expected, "got %v, expected %v", image, test.expected)
+	}
 }

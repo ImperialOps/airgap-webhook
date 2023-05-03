@@ -7,6 +7,7 @@ import (
 
 	admissionv1 "k8s.io/api/admission/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -72,21 +73,20 @@ func (r *AdmissionReview) handleResource() error {
 	case "v1.Pod":
 		return r.handlePodResource()
 	case "v1.Job":
-		_ = ""
+		return r.handleJobResource()
 	case "v1.CronJob":
-		_ = ""
+		return r.handleCronjobResource()
 	case "v1.Deployment":
 		return r.handleDeploymentResource()
 	case "v1.Daemonset":
-		_ = ""
+		return r.handleDaemonsetResource()
 	case "v1.StatefulSet":
-		_ = ""
+		return r.handleStatefulsetResource()
 	case "v1.ReplicaSet":
-		_ = ""
+		return r.handleReplicasetResource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s, not implemented", s))
 	}
-	return nil
 }
 
 func (r *AdmissionReview) handlePodResource() error {
@@ -98,13 +98,58 @@ func (r *AdmissionReview) handlePodResource() error {
 	return r.handlePodSpec(&pod.Spec)
 }
 
-func (r *AdmissionReview) handleDeploymentResource() error {
+func (r *AdmissionReview) handleJobResource() error {
 	rawRequest := r.Request.Object.Raw
-	deployment := appsv1.Deployment{}
-	if _, _, err := deserializer.Decode(rawRequest, nil, &deployment); err != nil {
+	resource := batchv1.Job{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
 		return NewApiError(http.StatusBadRequest, err.Error())
 	}
-	return r.handlePodSpec(&deployment.Spec.Template.Spec)
+	return r.handlePodSpec(&resource.Spec.Template.Spec)
+}
+
+func (r *AdmissionReview) handleCronjobResource() error {
+	rawRequest := r.Request.Object.Raw
+	resource := batchv1.CronJob{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+	return r.handlePodSpec(&resource.Spec.JobTemplate.Spec.Template.Spec)
+}
+
+func (r *AdmissionReview) handleDeploymentResource() error {
+	rawRequest := r.Request.Object.Raw
+	resource := appsv1.Deployment{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+	return r.handlePodSpec(&resource.Spec.Template.Spec)
+}
+
+func (r *AdmissionReview) handleDaemonsetResource() error {
+	rawRequest := r.Request.Object.Raw
+	resource := appsv1.DaemonSet{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+	return r.handlePodSpec(&resource.Spec.Template.Spec)
+}
+
+func (r *AdmissionReview) handleStatefulsetResource() error {
+	rawRequest := r.Request.Object.Raw
+	resource := appsv1.StatefulSet{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+	return r.handlePodSpec(&resource.Spec.Template.Spec)
+}
+
+func (r *AdmissionReview) handleReplicasetResource() error {
+	rawRequest := r.Request.Object.Raw
+	resource := appsv1.ReplicaSet{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+	return r.handlePodSpec(&resource.Spec.Template.Spec)
 }
 
 func (r *AdmissionReview) handlePodSpec(spec *corev1.PodSpec) error {
