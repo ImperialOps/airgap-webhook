@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -45,6 +46,7 @@ type Image struct {
 	registry   string `json:"registry"`
 	repository string `json:"repository"`
 	tag        string `json:"tag"`
+    digestHash string `json:"hash"`
 	digest     string `json:"digest"`
 }
 
@@ -54,7 +56,35 @@ func NewImage(i string) Image {
 		return image
 	}
 
-	return image
+    // handle registry and repository
+    nameParts := strings.Split(i, "/")
+    if strings.Contains(nameParts[0], ".") {
+        image.registry = nameParts[0]
+        nameParts = nameParts[1:]
+    } else {
+        image.registry = "docker.io"
+    }
+    image.repository = strings.Join(nameParts, "/")
+
+    // hangle digest
+    dirtyTag, dirtyDigest, foundDigest := strings.Cut(i, "@")
+    if foundDigest {
+        digestParts := strings.Split(dirtyDigest, ":")
+        image.digestHash = digestParts[0]
+        image.digest = digestParts[1]
+    } else {
+        image.digestHash = ""
+        image.digest = ""
+    }
+        
+    // handle tag
+    _, tag, foundTag := strings.Cut(dirtyTag, ":")
+    if foundTag {
+        image.tag = tag
+    } else {
+        image.tag = "latest"
+    }
+    return image
 }
 
 func handleAdmissionReview(b []byte) (admissionv1.AdmissionReview, error) {
@@ -111,8 +141,13 @@ func (r *AdmissionReview) handlePodResource() error {
 	if _, _, err := deserializer.Decode(rawRequest, nil, &pod); err != nil {
 		return NewApiError(http.StatusBadRequest, err.Error())
 	}
+	return r.handlePodSpec(&pod.Spec)
+}
 
-	log.Printf("got pod %s", pod.Name)
+func (r *AdmissionReview) handlePodSpec(spec *corev1.PodSpec) error {
+    for _, container := range(spec.InitContainers) {
+        r.images = append(r.images, NewImage(container.Image))
+    }
 	return nil
 }
 
