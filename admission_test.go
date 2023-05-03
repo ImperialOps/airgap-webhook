@@ -3,13 +3,12 @@ package main
 import (
 	"testing"
 
-	"github.com/anderseknert/kube-review/pkg/admission"
+	"github.com/imperialops/airgap-webhook/admission"
 	"github.com/stretchr/testify/assert"
-	admissionv1 "k8s.io/api/admission/v1"
 )
 
 var (
-	v1Pod = `apiVersion: v1
+	v1Pod = []byte(`apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -21,23 +20,40 @@ spec:
       name: webserver
       ports:
         - containerPort: 80
-          name: http`
+          name: http
+    - image: ghcr.io/stefanprodan/podinfo:6.3.6
+      name: podinfo
+      ports:
+        - containerPort: 9898
+          name: http`)
 )
 
 func TestHandleResource(t *testing.T) {
 	tests := []struct {
-		admissionRequest *admissionv1.AdmissionReview
-		expected         []Image
+		resource []byte
+		expected []Image
 	}{
-		{newAdmissionRequest(v1Pod), []Image{}},
+        {v1Pod, []Image{
+            {
+                registry: "docker.io",
+                repository: "nginx",
+                tag: "latest",
+                digest: "",
+            },
+            {
+                registry: "ghcr.io",
+                repository: "stefanprodan/podinfo",
+                tag: "6.3.6",
+                digest: "",
+            },
+        }},
 	}
 
 	for _, test := range tests {
-		_ = test.admissionRequest
-		_, err := NewClientset(test.path)
-		if err != nil && !test.err {
-			t.Errorf("got err: %s, on path: %s", err.Error(), test.path)
-		}
+        bytes, err := admission.CreateAdmissionReviewRequest(test.resource, "create", "imperialops", []string{})
+        admissionReview := MustAdmissionReview(bytes)
+        assert.NoError(t, err)
+        admissionReview.handleResource()
+        assert.Equal(t, admissionReview.images, test.expected, "got %v, expected %v", admissionReview.images, test.expected)
 	}
-	assert.Equal(t, true, true, "ok")
 }

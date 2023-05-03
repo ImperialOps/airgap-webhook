@@ -33,6 +33,14 @@ func NewAdmissionReview(b []byte) (*AdmissionReview, error) {
 	return admissionReview, nil
 }
 
+func MustAdmissionReview(b []byte) *AdmissionReview {
+    admissionReview, err := NewAdmissionReview(b)
+    if err != nil {
+        log.Panicf("could not create admission review: %s", err)
+    }
+	return admissionReview
+}
+
 type Image struct {
 	registry   string `json:"registry"`
 	repository string `json:"repository"`
