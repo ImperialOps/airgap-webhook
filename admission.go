@@ -56,16 +56,6 @@ func NewImage(i string) Image {
 		return image
 	}
 
-    // handle registry and repository
-    nameParts := strings.Split(i, "/")
-    if strings.Contains(nameParts[0], ".") {
-        image.registry = nameParts[0]
-        nameParts = nameParts[1:]
-    } else {
-        image.registry = "docker.io"
-    }
-    image.repository = strings.Join(nameParts, "/")
-
     // hangle digest
     dirtyTag, dirtyDigest, foundDigest := strings.Cut(i, "@")
     if foundDigest {
@@ -78,11 +68,21 @@ func NewImage(i string) Image {
     }
         
     // handle tag
-    _, tag, foundTag := strings.Cut(dirtyTag, ":")
+    name, tag, foundTag := strings.Cut(dirtyTag, ":")
     if foundTag {
         image.tag = tag
     } else {
         image.tag = "latest"
+    }
+
+    // handle registry and repository
+    nameParts := strings.Split(name, "/")
+    if strings.Contains(nameParts[0], ".") {
+        image.registry = nameParts[0]
+        image.repository = strings.Join(nameParts[1:], "/")
+    } else {
+        image.registry = "docker.io"
+        image.repository = strings.Join(nameParts, "/")
     }
     return image
 }
@@ -146,6 +146,9 @@ func (r *AdmissionReview) handlePodResource() error {
 
 func (r *AdmissionReview) handlePodSpec(spec *corev1.PodSpec) error {
     for _, container := range(spec.InitContainers) {
+        r.images = append(r.images, NewImage(container.Image))
+    }
+    for _, container := range(spec.Containers) {
         r.images = append(r.images, NewImage(container.Image))
     }
 	return nil
