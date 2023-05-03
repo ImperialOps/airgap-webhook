@@ -122,7 +122,7 @@ func (r *AdmissionReview) handleResource() error {
 	case "v1.CronJob":
 		_ = ""
 	case "v1.Deployment":
-		_ = ""
+		return r.handleDeploymentResource()
 	case "v1.Daemonset":
 		_ = ""
 	case "v1.StatefulSet":
@@ -144,6 +144,15 @@ func (r *AdmissionReview) handlePodResource() error {
 	return r.handlePodSpec(&pod.Spec)
 }
 
+func (r *AdmissionReview) handleDeploymentResource() error {
+	rawRequest := r.Request.Object.Raw
+	deployment := appsv1.Deployment{}
+	if _, _, err := deserializer.Decode(rawRequest, nil, &deployment); err != nil {
+		return NewApiError(http.StatusBadRequest, err.Error())
+	}
+	return r.handlePodSpec(&deployment.Spec.Template.Spec)
+}
+
 func (r *AdmissionReview) handlePodSpec(spec *corev1.PodSpec) error {
     for _, container := range(spec.InitContainers) {
         r.images = append(r.images, NewImage(container.Image))
@@ -151,16 +160,5 @@ func (r *AdmissionReview) handlePodSpec(spec *corev1.PodSpec) error {
     for _, container := range(spec.Containers) {
         r.images = append(r.images, NewImage(container.Image))
     }
-	return nil
-}
-
-func (r *AdmissionReview) handleDeploymentResource() error {
-	rawRequest := r.Request.Object.Raw
-	deployment := appsv1.Deployment{}
-	if _, _, err := deserializer.Decode(rawRequest, nil, &deployment); err != nil {
-		return NewApiError(http.StatusBadRequest, err.Error())
-	}
-
-	log.Printf("got deployment %s", deployment.Name)
 	return nil
 }

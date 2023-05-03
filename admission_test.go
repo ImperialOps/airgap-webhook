@@ -35,6 +35,27 @@ spec:
       ports:
         - containerPort: 9898
           name: http`)
+	v1Deployment = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: public.ecr.aws/nginx/nginx:stable-perl@sha256:1b624e3e6af841b907b1f5747b6f29ccb5ccb422f9e881eae82bd4b8b72cb7a1
+        ports:
+        - containerPort: 80`)
 )
 
 func TestHandleResource(t *testing.T) {
@@ -70,6 +91,15 @@ func TestHandleResource(t *testing.T) {
                 tag: "6.3.6",
                 digestHash: "",
                 digest: "",
+            },
+        }},
+        {v1Deployment, []Image{
+            {
+                registry: "public.ecr.aws",
+                repository: "nginx/nginx",
+                tag: "stable-perl",
+                digestHash: "sha256",
+                digest: "1b624e3e6af841b907b1f5747b6f29ccb5ccb422f9e881eae82bd4b8b72cb7a1",
             },
         }},
 	}
