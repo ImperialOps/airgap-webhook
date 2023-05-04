@@ -78,7 +78,7 @@ func (r *AdmissionReview) handleResource() error {
 		return r.handleCronjobResource()
 	case "v1.Deployment":
 		return r.handleDeploymentResource()
-	case "v1.Daemonset":
+	case "v1.DaemonSet":
 		return r.handleDaemonsetResource()
 	case "v1.StatefulSet":
 		return r.handleStatefulsetResource()
