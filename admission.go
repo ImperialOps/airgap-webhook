@@ -68,28 +68,38 @@ func handleAdmissionReview(b []byte) (admissionv1.AdmissionReview, error) {
 }
 
 func (r *AdmissionReview) handleResource() error {
-	s := (r.Request.Kind.Version + "." + r.Request.Kind.Kind)
+	s := (r.Request.Kind.Kind)
 	switch s {
-	case "v1.Pod":
+	case "Pod":
 		return r.handlePodResource()
-	case "v1.Job":
+	case "Job":
 		return r.handleJobResource()
-	case "v1.CronJob":
+	case "CronJob":
 		return r.handleCronjobResource()
-	case "v1.Deployment":
+	case "Deployment":
 		return r.handleDeploymentResource()
-	case "v1.DaemonSet":
+	case "DaemonSet":
 		return r.handleDaemonsetResource()
-	case "v1.StatefulSet":
+	case "StatefulSet":
 		return r.handleStatefulsetResource()
-	case "v1.ReplicaSet":
+	case "ReplicaSet":
 		return r.handleReplicasetResource()
 	default:
-		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s, not implemented", s))
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", r.Request.Kind.Version, s))
 	}
 }
 
 func (r *AdmissionReview) handlePodResource() error {
+	s := (r.Request.Kind.Version)
+    switch s {
+    case "v1":
+        return r.handlePodV1Resource()
+	default:
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
+	}
+}
+
+func (r *AdmissionReview) handlePodV1Resource() error {
 	rawRequest := r.Request.Object.Raw
 	pod := corev1.Pod{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &pod); err != nil {
@@ -99,6 +109,16 @@ func (r *AdmissionReview) handlePodResource() error {
 }
 
 func (r *AdmissionReview) handleJobResource() error {
+	s := (r.Request.Kind.Version)
+    switch s {
+    case "v1":
+        return r.handleJobV1Resource()
+	default:
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
+	}
+}
+
+func (r *AdmissionReview) handleJobV1Resource() error {
 	rawRequest := r.Request.Object.Raw
 	resource := batchv1.Job{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
@@ -108,6 +128,16 @@ func (r *AdmissionReview) handleJobResource() error {
 }
 
 func (r *AdmissionReview) handleCronjobResource() error {
+	s := (r.Request.Kind.Version)
+    switch s {
+    case "v1":
+        return r.handleCronjobV1Resource()
+	default:
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
+	}
+}
+
+func (r *AdmissionReview) handleCronjobV1Resource() error {
 	rawRequest := r.Request.Object.Raw
 	resource := batchv1.CronJob{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
@@ -117,6 +147,16 @@ func (r *AdmissionReview) handleCronjobResource() error {
 }
 
 func (r *AdmissionReview) handleDeploymentResource() error {
+	s := (r.Request.Kind.Version)
+    switch s {
+    case "v1":
+        return r.handleDeploymentV1Resource()
+	default:
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
+	}
+}
+
+func (r *AdmissionReview) handleDeploymentV1Resource() error {
 	rawRequest := r.Request.Object.Raw
 	resource := appsv1.Deployment{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
@@ -126,6 +166,16 @@ func (r *AdmissionReview) handleDeploymentResource() error {
 }
 
 func (r *AdmissionReview) handleDaemonsetResource() error {
+	s := (r.Request.Kind.Version)
+    switch s {
+    case "v1":
+        return r.handleDaemonsetV1Resource()
+	default:
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
+	}
+}
+
+func (r *AdmissionReview) handleDaemonsetV1Resource() error {
 	rawRequest := r.Request.Object.Raw
 	resource := appsv1.DaemonSet{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
@@ -135,6 +185,16 @@ func (r *AdmissionReview) handleDaemonsetResource() error {
 }
 
 func (r *AdmissionReview) handleStatefulsetResource() error {
+	s := (r.Request.Kind.Version)
+    switch s {
+    case "v1":
+        return r.handleStatefulsetV1Resource()
+	default:
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
+	}
+}
+
+func (r *AdmissionReview) handleStatefulsetV1Resource() error {
 	rawRequest := r.Request.Object.Raw
 	resource := appsv1.StatefulSet{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
@@ -144,6 +204,16 @@ func (r *AdmissionReview) handleStatefulsetResource() error {
 }
 
 func (r *AdmissionReview) handleReplicasetResource() error {
+	s := (r.Request.Kind.Version)
+    switch s {
+    case "v1":
+        return r.handleReplicasetV1Resource()
+	default:
+		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
+	}
+}
+
+func (r *AdmissionReview) handleReplicasetV1Resource() error {
 	rawRequest := r.Request.Object.Raw
 	resource := appsv1.ReplicaSet{}
 	if _, _, err := deserializer.Decode(rawRequest, nil, &resource); err != nil {
