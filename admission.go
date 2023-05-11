@@ -59,12 +59,11 @@ func handleAdmissionReview(b []byte) (admissionv1.AdmissionReview, error) {
 	admissionResponse := &admissionv1.AdmissionResponse{}
 	admissionResponse.Allowed = true
 
-	var admissionReviewResponse admissionv1.AdmissionReview
-	admissionReviewResponse.Response = admissionResponse
-	admissionReviewResponse.SetGroupVersionKind(admissionReview.GroupVersionKind())
-	admissionReviewResponse.Response.UID = admissionReview.Request.UID
+	admissionReview.Response = admissionResponse
+	admissionReview.SetGroupVersionKind(admissionReview.GroupVersionKind())
+	admissionReview.Response.UID = admissionReview.Request.UID
 
-	return admissionReviewResponse, nil
+	return admissionReview.AdmissionReview, nil
 }
 
 func (r *AdmissionReview) handleResource() error {
@@ -91,9 +90,9 @@ func (r *AdmissionReview) handleResource() error {
 
 func (r *AdmissionReview) handlePodResource() error {
 	s := (r.Request.Kind.Version)
-    switch s {
-    case "v1":
-        return r.handlePodV1Resource()
+	switch s {
+	case "v1":
+		return r.handlePodV1Resource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
 	}
@@ -110,9 +109,9 @@ func (r *AdmissionReview) handlePodV1Resource() error {
 
 func (r *AdmissionReview) handleJobResource() error {
 	s := (r.Request.Kind.Version)
-    switch s {
-    case "v1":
-        return r.handleJobV1Resource()
+	switch s {
+	case "v1":
+		return r.handleJobV1Resource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
 	}
@@ -129,9 +128,9 @@ func (r *AdmissionReview) handleJobV1Resource() error {
 
 func (r *AdmissionReview) handleCronjobResource() error {
 	s := (r.Request.Kind.Version)
-    switch s {
-    case "v1":
-        return r.handleCronjobV1Resource()
+	switch s {
+	case "v1":
+		return r.handleCronjobV1Resource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
 	}
@@ -148,9 +147,9 @@ func (r *AdmissionReview) handleCronjobV1Resource() error {
 
 func (r *AdmissionReview) handleDeploymentResource() error {
 	s := (r.Request.Kind.Version)
-    switch s {
-    case "v1":
-        return r.handleDeploymentV1Resource()
+	switch s {
+	case "v1":
+		return r.handleDeploymentV1Resource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
 	}
@@ -167,9 +166,9 @@ func (r *AdmissionReview) handleDeploymentV1Resource() error {
 
 func (r *AdmissionReview) handleDaemonsetResource() error {
 	s := (r.Request.Kind.Version)
-    switch s {
-    case "v1":
-        return r.handleDaemonsetV1Resource()
+	switch s {
+	case "v1":
+		return r.handleDaemonsetV1Resource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
 	}
@@ -186,9 +185,9 @@ func (r *AdmissionReview) handleDaemonsetV1Resource() error {
 
 func (r *AdmissionReview) handleStatefulsetResource() error {
 	s := (r.Request.Kind.Version)
-    switch s {
-    case "v1":
-        return r.handleStatefulsetV1Resource()
+	switch s {
+	case "v1":
+		return r.handleStatefulsetV1Resource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
 	}
@@ -205,9 +204,9 @@ func (r *AdmissionReview) handleStatefulsetV1Resource() error {
 
 func (r *AdmissionReview) handleReplicasetResource() error {
 	s := (r.Request.Kind.Version)
-    switch s {
-    case "v1":
-        return r.handleReplicasetV1Resource()
+	switch s {
+	case "v1":
+		return r.handleReplicasetV1Resource()
 	default:
 		return NewApiError(http.StatusNotImplemented, fmt.Sprintf("resource kind %s.%s, not implemented", s, r.Request.Kind.Kind))
 	}

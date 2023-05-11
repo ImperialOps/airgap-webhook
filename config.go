@@ -8,14 +8,28 @@ import (
 )
 
 type Config struct {
-	cfgFile    string    `json:"cfgFile"`
-	listenAddr string    `json:"listenAddr"`
-	apiAddr    string    `json:"apiAddr"`
-	tls        ConfigTls `json:"tls"`
+	cfgFile    string        `json:"cfgFile"`
+	listenAddr string        `json:"listenAddr"`
+	apiAddr    string        `json:"apiAddr"`
+	tls        ConfigTls     `json:"tls"`
+	backend    ConfigBackend `json:"backend"`
 }
 
 type ConfigTls struct {
 	enabled  bool   `json:"enabled"`
+	certFile string `json:"certFile"`
+	keyFile  string `json:"keyFile"`
+}
+
+type ConfigBackend struct {
+	protocol string           `json:"protocol"`
+	endpoint string           `json:"endpoint"`
+	tls      ConfigBackendTls `json:"tls"`
+}
+
+type ConfigBackendTls struct {
+	enabled  bool   `json:"enabled"`
+	verify   bool   `json:"verify"`
 	certFile string `json:"certFile"`
 	keyFile  string `json:"keyFile"`
 }

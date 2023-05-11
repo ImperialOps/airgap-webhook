@@ -17,7 +17,8 @@ type ApiServer interface {
 }
 
 type ApiServerCommon struct {
-	config *Config
+	config  *Config
+	backend IBackend
 }
 
 type ApiServerHttp struct {
@@ -30,7 +31,8 @@ type ApiServerHttps struct {
 
 func NewApiServer(c *Config) ApiServer {
 	apiServer := ApiServerCommon{
-		config: c,
+		config:  c,
+		backend: NewBackend(c.backend),
 	}
 
 	switch c.tls.enabled {
